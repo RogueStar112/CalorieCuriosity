@@ -535,7 +535,7 @@ export default function CalorieGame() {
                         ? 'border-2 border-gray-600 bg-gradient-to-br from-gray-700 to-gray-600'
                         : 'border-2 border-gray-200 bg-gradient-to-br from-white to-gray-50'
                     }`}
-                    style={{ height: `${heightScale}px` }}
+                    style={{ height: `250px` }}
                   >
                     <div className="flex flex-col items-center justify-center h-full">
                       <div className="text-6xl mb-3">{food.emoji}</div>

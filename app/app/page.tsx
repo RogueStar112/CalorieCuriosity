@@ -263,7 +263,7 @@ export default function CalorieGame() {
       <div className="bg-white rounded-3xl shadow-xl p-8 max-w-2xl w-full">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Calorie Curiosity 🤔</h1>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Calorie Curiosity</h1>
           <p className="text-gray-600">Learning about food, one guess at a time</p>
           <div className="flex justify-center gap-6 mt-4 text-sm">
             <span className="text-gray-700">Round: <span className="font-semibold">{round}/{MAX_ROUNDS}</span></span>

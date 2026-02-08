@@ -69,6 +69,11 @@ export default function CalorieGame() {
     selectedCalories: number;
     otherCalories: number;
   }>>([]);
+  
+  // Settings
+  const [gameStarted, setGameStarted] = useState<boolean>(false);
+  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
+  const [darkMode, setDarkMode] = useState<boolean>(false);
 
   // Generate a new random pair
   const generateNewPair = () => {
@@ -87,37 +92,57 @@ export default function CalorieGame() {
       food1 = { ...foodData[index1] };
       food2 = { ...foodData[index2] };
       
-      // Randomize serving sizes (50-150% of base)
-      if (food1.caloriesPerGram) {
-        const multiplier = 0.5 + Math.random(); // 0.5 to 1.5
-        const baseGrams = food1.calories / food1.caloriesPerGram;
-        const newGrams = Math.round(baseGrams * multiplier);
-        food1.displayCalories = Math.round(newGrams * food1.caloriesPerGram);
-        food1.displayServing = `${newGrams}g`;
-      } else {
+      // Handle portion sizes based on difficulty
+      if (difficulty === 'easy') {
+        // Easy mode: use base calories, no portion variation
         food1.displayCalories = food1.calories;
         food1.displayServing = food1.serving;
-      }
-      
-      if (food2.caloriesPerGram) {
-        const multiplier = 0.5 + Math.random(); // 0.5 to 1.5
-        const baseGrams = food2.calories / food2.caloriesPerGram;
-        const newGrams = Math.round(baseGrams * multiplier);
-        food2.displayCalories = Math.round(newGrams * food2.caloriesPerGram);
-        food2.displayServing = `${newGrams}g`;
-      } else {
         food2.displayCalories = food2.calories;
         food2.displayServing = food2.serving;
+      } else {
+        // Medium and Hard: Randomize serving sizes (50-150% of base)
+        if (food1.caloriesPerGram) {
+          const multiplier = 0.5 + Math.random(); // 0.5 to 1.5
+          const baseGrams = food1.calories / food1.caloriesPerGram;
+          const newGrams = Math.round(baseGrams * multiplier);
+          food1.displayCalories = Math.round(newGrams * food1.caloriesPerGram);
+          food1.displayServing = `${newGrams}g`;
+        } else {
+          food1.displayCalories = food1.calories;
+          food1.displayServing = food1.serving;
+        }
+        
+        if (food2.caloriesPerGram) {
+          const multiplier = 0.5 + Math.random(); // 0.5 to 1.5
+          const baseGrams = food2.calories / food2.caloriesPerGram;
+          const newGrams = Math.round(baseGrams * multiplier);
+          food2.displayCalories = Math.round(newGrams * food2.caloriesPerGram);
+          food2.displayServing = `${newGrams}g`;
+        } else {
+          food2.displayCalories = food2.calories;
+          food2.displayServing = food2.serving;
+        }
       }
       
       pairKey = [food1.id, food2.id].sort().join('-');
       attempts++;
       
-      if (attempts > 50) {
+      if (attempts > 100) {
         setGameOver(true);
         return;
       }
-    } while (usedPairs.has(pairKey));
+      
+      const calorieDiff = Math.abs((food1.displayCalories || 0) - (food2.displayCalories || 0));
+      
+      // Hard mode: ensure calories are close (within 100 cal difference)
+      const isValidForHard = difficulty === 'hard' ? calorieDiff <= 100 && calorieDiff > 0 : true;
+      
+      // Keep regenerating if: already used, equal calories, or invalid for hard mode
+    } while (
+      usedPairs.has(pairKey) || 
+      food1.displayCalories === food2.displayCalories ||
+      (difficulty === 'hard' && Math.abs((food1.displayCalories || 0) - (food2.displayCalories || 0)) > 100)
+    );
     
     setUsedPairs(prev => new Set([...prev, pairKey]));
     setFoodPair([food1, food2]);
@@ -125,8 +150,11 @@ export default function CalorieGame() {
   };
 
   useEffect(() => {
-    generateNewPair();
-  }, []);
+    // Only generate pair when game starts
+    if (gameStarted && foodPair.length === 0) {
+      generateNewPair();
+    }
+  }, [gameStarted]);
 
   const handleGuess = (selectedFoodItem: Food) => {
     const otherFood = foodPair.find(f => f.id !== selectedFoodItem.id);
@@ -192,28 +220,169 @@ export default function CalorieGame() {
     setGameOver(false);
     setGameMode('more');
     setRoundHistory([]);
+    setGameStarted(false);
+  };
+  
+  const startGame = () => {
+    setGameStarted(true);
     generateNewPair();
   };
 
+  // Title Screen
+  if (!gameStarted) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center p-4 transition-colors ${
+        darkMode ? 'bg-gradient-to-br from-gray-900 to-gray-800' : 'bg-gradient-to-br from-green-50 to-blue-50'
+      }`}>
+        <div className={`rounded-3xl shadow-xl p-8 max-w-md w-full ${
+          darkMode ? 'bg-gray-800' : 'bg-white'
+        }`}>
+          <div className="text-center mb-8">
+            <div className="text-6xl mb-4">🍽️</div>
+            <h1 className={`text-4xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+              Calorie Curiosity
+            </h1>
+            <p className={`${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              Test your food knowledge!
+            </p>
+          </div>
+
+          {/* Difficulty Selection */}
+          <div className="mb-6">
+            <label className={`block text-sm font-semibold mb-3 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              Difficulty Level
+            </label>
+            <div className="space-y-2">
+              <button
+                onClick={() => setDifficulty('easy')}
+                className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+                  difficulty === 'easy'
+                    ? darkMode
+                      ? 'border-green-500 bg-green-900/30'
+                      : 'border-green-500 bg-green-50'
+                    : darkMode
+                    ? 'border-gray-600 bg-gray-700 hover:border-gray-500'
+                    : 'border-gray-200 bg-white hover:border-gray-300'
+                }`}
+              >
+                <div className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                  🌱 Easy
+                </div>
+                <div className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Standard portions, no serving sizes shown
+                </div>
+              </button>
+
+              <button
+                onClick={() => setDifficulty('medium')}
+                className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+                  difficulty === 'medium'
+                    ? darkMode
+                      ? 'border-green-500 bg-green-900/30'
+                      : 'border-green-500 bg-green-50'
+                    : darkMode
+                    ? 'border-gray-600 bg-gray-700 hover:border-gray-500'
+                    : 'border-gray-200 bg-white hover:border-gray-300'
+                }`}
+              >
+                <div className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                  🔥 Medium
+                </div>
+                <div className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Random portion sizes shown
+                </div>
+              </button>
+
+              <button
+                onClick={() => setDifficulty('hard')}
+                className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+                  difficulty === 'hard'
+                    ? darkMode
+                      ? 'border-green-500 bg-green-900/30'
+                      : 'border-green-500 bg-green-50'
+                    : darkMode
+                    ? 'border-gray-600 bg-gray-700 hover:border-gray-500'
+                    : 'border-gray-200 bg-white hover:border-gray-300'
+                }`}
+              >
+                <div className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                  💪 Hard
+                </div>
+                <div className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Random portions, close calorie counts
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* Dark Mode Toggle */}
+          <div className="mb-6">
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className={`w-full p-4 rounded-xl border-2 transition-all flex items-center justify-between ${
+                darkMode
+                  ? 'border-gray-600 bg-gray-700 hover:border-gray-500'
+                  : 'border-gray-200 bg-white hover:border-gray-300'
+              }`}
+            >
+              <span className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                {darkMode ? '🌙 Dark Mode' : '☀️ Light Mode'}
+              </span>
+              <div className={`w-12 h-6 rounded-full transition-colors ${
+                darkMode ? 'bg-green-500' : 'bg-gray-300'
+              }`}>
+                <div className={`w-5 h-5 rounded-full bg-white mt-0.5 transition-transform ${
+                  darkMode ? 'ml-6' : 'ml-0.5'
+                }`}></div>
+              </div>
+            </button>
+          </div>
+
+          {/* Start Button */}
+          <button
+            onClick={startGame}
+            className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-8 rounded-full transition-colors text-lg"
+          >
+            Start Game
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (gameOver) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl shadow-xl p-8 max-w-4xl w-full text-center">
+      <div className={`min-h-screen flex items-center justify-center p-4 transition-colors ${
+        darkMode ? 'bg-gradient-to-br from-gray-900 to-gray-800' : 'bg-gradient-to-br from-green-50 to-blue-50'
+      }`}>
+        <div className={`rounded-3xl shadow-xl p-8 max-w-4xl w-full text-center ${
+          darkMode ? 'bg-gray-800' : 'bg-white'
+        }`}>
           <div className="text-6xl mb-4">🎉</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Great job!</h2>
-          <p className="text-gray-600 mb-4">You completed all 10 rounds!</p>
+          <h2 className={`text-2xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+            Great job!
+          </h2>
+          <p className={`mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            You completed all 10 rounds!
+          </p>
           <p className="text-3xl font-bold text-green-600 mb-6">Final Score: {score}/{MAX_ROUNDS}</p>
           
           {/* Round History Grid */}
           <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-700 mb-3">Your Game Summary:</h3>
+            <h3 className={`text-lg font-semibold mb-3 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+              Your Game Summary:
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {roundHistory.map((round, index) => (
                 <div
                   key={index}
-                  className="border-2 border-gray-200 rounded-xl p-4"
+                  className={`rounded-xl p-4 border-2 ${
+                    darkMode ? 'border-gray-700' : 'border-gray-200'
+                  }`}
                 >
-                  <div className="text-xs font-semibold text-gray-500 mb-2">
+                  <div className={`text-xs font-semibold mb-2 ${
+                    darkMode ? 'text-gray-400' : 'text-gray-500'
+                  }`}>
                     Round {index + 1} {index < 5 ? '(More calories)' : '(Fewer calories)'}
                   </div>
                   <div className="flex gap-2 justify-center">
@@ -233,12 +402,24 @@ export default function CalorieGame() {
                     </div>
                     
                     {/* Other Food */}
-                    <div className="flex-1 rounded-lg p-3 bg-gray-50 border-2 border-gray-300">
+                    <div className={`flex-1 rounded-lg p-3 border-2 ${
+                      darkMode 
+                        ? 'bg-gray-700 border-gray-600' 
+                        : 'bg-gray-50 border-gray-300'
+                    }`}>
                       <div className="text-3xl mb-1">{round.otherFood.emoji}</div>
-                      <div className="text-xs font-medium text-gray-700">{round.otherFood.name}</div>
-                      <div className="text-xs text-gray-600 mt-1">{round.otherFood.displayServing}</div>
-                      <div className="text-sm font-bold text-gray-800 mt-1">{round.otherCalories} cal</div>
-                      <div className="text-xs text-gray-500 mt-1">Other option</div>
+                      <div className={`text-xs font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        {round.otherFood.name}
+                      </div>
+                      <div className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {round.otherFood.displayServing}
+                      </div>
+                      <div className={`text-sm font-bold mt-1 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                        {round.otherCalories} cal
+                      </div>
+                      <div className={`text-xs mt-1 ${darkMode ? 'text-gray-500' : 'text-gray-500'}`}>
+                        Other option
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -258,20 +439,40 @@ export default function CalorieGame() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
+    <div className={`min-h-screen flex items-center justify-center p-4 transition-colors ${
+      darkMode ? 'bg-gradient-to-br from-gray-900 to-gray-800' : 'bg-gradient-to-br from-green-50 to-blue-50'
+    }`}>
       {showConfetti && <Confetti recycle={false} numberOfPieces={500} />}
-      <div className="bg-white rounded-3xl shadow-xl p-8 max-w-2xl w-full">
+      <div className={`rounded-3xl shadow-xl p-8 max-w-2xl w-full ${
+        darkMode ? 'bg-gray-800' : 'bg-white'
+      }`}>
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Calorie Curiosity</h1>
-          <p className="text-gray-600">Learning about food, one guess at a time</p>
+          <h1 className={`text-3xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+            Calorie Curiosity 🤔
+          </h1>
+          <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
+            Learning about food, one guess at a time
+          </p>
           <div className="flex justify-center gap-6 mt-4 text-sm">
-            <span className="text-gray-700">Round: <span className="font-semibold">{round}/{MAX_ROUNDS}</span></span>
-            <span className="text-green-600">Score: <span className="font-semibold">{score}</span></span>
+            <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+              Round: <span className="font-semibold">{round}/{MAX_ROUNDS}</span>
+            </span>
+            <span className="text-green-600">
+              Score: <span className="font-semibold">{score}</span>
+            </span>
           </div>
           {round === 6 && (
-            <div className="mt-3 px-4 py-2 bg-blue-100 border border-blue-300 rounded-lg inline-block">
-              <p className="text-sm text-blue-800 font-medium">🔄 Mode switched! Now guess which has FEWER calories</p>
+            <div className={`mt-3 px-4 py-2 rounded-lg inline-block border ${
+              darkMode 
+                ? 'bg-blue-900/30 border-blue-700' 
+                : 'bg-blue-100 border-blue-300'
+            }`}>
+              <p className={`text-sm font-medium ${
+                darkMode ? 'text-blue-300' : 'text-blue-800'
+              }`}>
+                🔄 Mode switched! Now guess which has FEWER calories
+              </p>
             </div>
           )}
         </div>
@@ -279,7 +480,7 @@ export default function CalorieGame() {
         {/* Game Area */}
         {!showResult ? (
           <div>
-            <p className="text-center text-gray-700 mb-6 text-lg">
+            <p className={`text-center mb-6 text-lg ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
               Which has {gameMode === 'more' ? 'more' : 'fewer'} calories?
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -287,11 +488,21 @@ export default function CalorieGame() {
                 <button
                   key={food.id}
                   onClick={() => handleGuess(food)}
-                  className="bg-gradient-to-br from-white to-gray-50 hover:from-green-50 hover:to-green-100 border-2 border-gray-200 hover:border-green-400 rounded-2xl p-8 transition-all transform hover:scale-105 cursor-pointer"
+                  className={`rounded-2xl p-8 transition-all transform hover:scale-105 cursor-pointer border-2 ${
+                    darkMode
+                      ? 'bg-gradient-to-br from-gray-700 to-gray-600 border-gray-600 hover:from-green-800 hover:to-green-700 hover:border-green-500'
+                      : 'bg-gradient-to-br from-white to-gray-50 border-gray-200 hover:from-green-50 hover:to-green-100 hover:border-green-400'
+                  }`}
                 >
                   <div className="text-6xl mb-3">{food.emoji}</div>
-                  <div className="text-xl font-semibold text-gray-800">{food.name}</div>
-                  <div className="text-md text-gray-500">{food.displayServing}</div>
+                  <div className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                    {food.name}
+                  </div>
+                  {difficulty !== 'easy' && (
+                    <div className={`text-sm mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {food.displayServing}
+                    </div>
+                  )}
                 </button>
               ))}
             </div>
@@ -317,24 +528,42 @@ export default function CalorieGame() {
                 return (
                   <div
                     key={food.id}
-                    className={`bg-gradient-to-br from-white to-gray-50 rounded-2xl p-8 flex-1 transition-all ${
-                      shouldShowGreen ? 'border-4 border-green-500 shadow-lg shadow-green-200' : 'border-2 border-gray-200'
+                    className={`rounded-2xl p-8 flex-1 transition-all ${
+                      shouldShowGreen 
+                        ? 'border-4 border-green-500 shadow-lg shadow-green-200' 
+                        : darkMode
+                        ? 'border-2 border-gray-600 bg-gradient-to-br from-gray-700 to-gray-600'
+                        : 'border-2 border-gray-200 bg-gradient-to-br from-white to-gray-50'
                     }`}
                     style={{ height: `${heightScale}px` }}
                   >
                     <div className="flex flex-col items-center justify-center h-full">
                       <div className="text-6xl mb-3">{food.emoji}</div>
-                      <div className="text-xl font-semibold text-gray-800">{food.name}</div>
-                      <div className="text-sm text-gray-500 mt-1">{food.displayServing || food.serving}</div>
-                      <div className="text-sm text-gray-600 mt-2">{foodCals} cal</div>
+                      <div className={`text-xl font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+                        {food.name}
+                      </div>
+                      <div className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                        {food.displayServing || food.serving}
+                      </div>
+                      <div className={`text-sm mt-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                        {foodCals} cal
+                      </div>
                     </div>
                   </div>
                 );
               })}
             </div>
-            <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6 mb-6">
-              <p className="text-lg text-gray-700 mb-4">{resultMessage}</p>
-              <p className="text-sm text-gray-500">Remember: All foods can be part of a balanced diet! 🌱</p>
+            <div className={`rounded-2xl p-6 mb-6 border-2 ${
+              darkMode 
+                ? 'bg-blue-900/30 border-blue-700'
+                : 'bg-blue-50 border-blue-200'
+            }`}>
+              <p className={`text-lg mb-4 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                {resultMessage}
+              </p>
+              <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                Remember: All foods can be part of a balanced diet! 🌱
+              </p>
             </div>
             <button
               onClick={nextRound}

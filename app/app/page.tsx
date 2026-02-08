@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Confetti from 'react-confetti';
 
 // Type definitions
 interface Food {
@@ -53,6 +54,9 @@ export default function CalorieGame() {
   const [resultMessage, setResultMessage] = useState<string>('');
   const [usedPairs, setUsedPairs] = useState<Set<string>>(new Set());
   const [gameOver, setGameOver] = useState<boolean>(false);
+  const [showConfetti, setShowConfetti] = useState<boolean>(false);
+  const [selectedFood, setSelectedFood] = useState<Food | null>(null);
+  const [isCorrect, setIsCorrect] = useState<boolean>(false);
 
   // Generate a new random pair
   const generateNewPair = () => {
@@ -88,18 +92,23 @@ export default function CalorieGame() {
     generateNewPair();
   }, []);
 
-  const handleGuess = (selectedFood: Food) => {
-    const otherFood = foodPair.find(f => f.id !== selectedFood.id);
+  const handleGuess = (selectedFoodItem: Food) => {
+    const otherFood = foodPair.find(f => f.id !== selectedFoodItem.id);
     
     if (!otherFood) return;
     
-    const isCorrect = selectedFood.calories > otherFood.calories;
+    const correct = selectedFoodItem.calories > otherFood.calories;
     
-    if (isCorrect) {
+    setSelectedFood(selectedFoodItem);
+    setIsCorrect(correct);
+    
+    if (correct) {
       setScore(score + 1);
-      setResultMessage(`Nice! ${selectedFood.name} has ${selectedFood.calories} cal vs ${otherFood.name}'s ${otherFood.calories} cal`);
+      setResultMessage(`Nice! ${selectedFoodItem.name} has ${selectedFoodItem.calories} cal vs ${otherFood.name}'s ${otherFood.calories} cal`);
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 3000);
     } else {
-      setResultMessage(`Actually, ${otherFood.name} has ${otherFood.calories} cal vs ${selectedFood.name}'s ${selectedFood.calories} cal`);
+      setResultMessage(`Actually, ${otherFood.name} has ${otherFood.calories} cal vs ${selectedFoodItem.name}'s ${selectedFoodItem.calories} cal`);
     }
     
     setShowResult(true);
@@ -107,6 +116,8 @@ export default function CalorieGame() {
 
   const nextRound = () => {
     setRound(round + 1);
+    setSelectedFood(null);
+    setIsCorrect(false);
     generateNewPair();
   };
 
@@ -139,6 +150,7 @@ export default function CalorieGame() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
+      {showConfetti && <Confetti recycle={false} numberOfPieces={500} />}
       <div className="bg-white rounded-3xl shadow-xl p-8 max-w-2xl w-full">
         {/* Header */}
         <div className="text-center mb-8">
@@ -163,12 +175,46 @@ export default function CalorieGame() {
                 >
                   <div className="text-6xl mb-3">{food.emoji}</div>
                   <div className="text-xl font-semibold text-gray-800">{food.name}</div>
+                  <div className='text-gray-600 italic text-lg'>{food.serving}</div>
                 </button>
               ))}
             </div>
           </div>
         ) : (
           <div className="text-center">
+            <div className="flex gap-4 items-end justify-center mb-6">
+              {foodPair.map((food) => {
+                const maxCalories = Math.max(...foodPair.map(f => f.calories));
+                const minCalories = Math.min(...foodPair.map(f => f.calories));
+                const calorieRange = maxCalories - minCalories;
+                
+                const minHeight = 200;
+                const maxHeight = 350;
+                const heightScale = calorieRange > 0 
+                  ? ((food.calories - minCalories) / calorieRange) * (maxHeight - minHeight) + minHeight
+                  : minHeight;
+                
+                const wasSelected = selectedFood?.id === food.id;
+                const shouldShowGreen = wasSelected && isCorrect;
+                
+                return (
+                  <div
+                    key={food.id}
+                    className={`bg-gradient-to-br from-white to-gray-50 rounded-2xl p-8 flex-1 transition-all ${
+                      shouldShowGreen ? 'border-4 border-green-500 shadow-lg shadow-green-200' : 'border-2 border-gray-200'
+                    }`}
+                    style={{ height: `${heightScale}px` }}
+                  >
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <div className="text-6xl mb-3">{food.emoji}</div>
+                      <div className="text-xl font-semibold text-gray-800">{food.name}</div>
+                      <div className='text-gray-600 text-lg'>{food.serving}</div>
+                      <div className="text-sm text-gray-600 mt-2">{food.calories} cal</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
             <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6 mb-6">
               <p className="text-lg text-gray-700 mb-4">{resultMessage}</p>
               <p className="text-sm text-gray-500">Remember: All foods can be part of a balanced diet! 🌱</p>

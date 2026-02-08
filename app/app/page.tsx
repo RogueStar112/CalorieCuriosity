@@ -62,6 +62,13 @@ export default function CalorieGame() {
   const [selectedFood, setSelectedFood] = useState<Food | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean>(false);
   const [gameMode, setGameMode] = useState<'more' | 'less'>('more');
+  const [roundHistory, setRoundHistory] = useState<Array<{ 
+    selectedFood: Food; 
+    otherFood: Food;
+    correct: boolean;
+    selectedCalories: number;
+    otherCalories: number;
+  }>>([]);
 
   // Generate a new random pair
   const generateNewPair = () => {
@@ -136,6 +143,15 @@ export default function CalorieGame() {
     setSelectedFood(selectedFoodItem);
     setIsCorrect(correct);
     
+    // Add to round history with both foods and calories
+    setRoundHistory(prev => [...prev, { 
+      selectedFood: selectedFoodItem, 
+      otherFood: otherFood,
+      correct,
+      selectedCalories: selectedCals,
+      otherCalories: otherCals
+    }]);
+    
     if (correct) {
       setScore(score + 1);
       const comparisonWord = gameMode === 'more' ? 'more' : 'fewer';
@@ -175,17 +191,61 @@ export default function CalorieGame() {
     setUsedPairs(new Set());
     setGameOver(false);
     setGameMode('more');
+    setRoundHistory([]);
     generateNewPair();
   };
 
   if (gameOver) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl shadow-xl p-8 max-w-md w-full text-center">
+        <div className="bg-white rounded-3xl shadow-xl p-8 max-w-4xl w-full text-center">
           <div className="text-6xl mb-4">🎉</div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Great job!</h2>
           <p className="text-gray-600 mb-4">You completed all 10 rounds!</p>
           <p className="text-3xl font-bold text-green-600 mb-6">Final Score: {score}/{MAX_ROUNDS}</p>
+          
+          {/* Round History Grid */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-700 mb-3">Your Game Summary:</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {roundHistory.map((round, index) => (
+                <div
+                  key={index}
+                  className="border-2 border-gray-200 rounded-xl p-4"
+                >
+                  <div className="text-xs font-semibold text-gray-500 mb-2">
+                    Round {index + 1} {index < 5 ? '(More calories)' : '(Fewer calories)'}
+                  </div>
+                  <div className="flex gap-2 justify-center">
+                    {/* Selected Food */}
+                    <div
+                      className={`flex-1 rounded-lg p-3 ${
+                        round.correct 
+                          ? 'bg-green-100 border-2 border-green-400' 
+                          : 'bg-red-100 border-2 border-red-400'
+                      }`}
+                    >
+                      <div className="text-3xl mb-1">{round.selectedFood.emoji}</div>
+                      <div className="text-xs font-medium text-gray-700">{round.selectedFood.name}</div>
+                      <div className="text-xs text-gray-600 mt-1">{round.selectedFood.displayServing}</div>
+                      <div className="text-sm font-bold text-gray-800 mt-1">{round.selectedCalories} cal</div>
+                      <div className="text-xs font-semibold text-gray-600 mt-1">✓ Your pick</div>
+                    </div>
+                    
+                    {/* Other Food */}
+                    <div className="flex-1 rounded-lg p-3 bg-gray-50 border-2 border-gray-300">
+                      <div className="text-3xl mb-1">{round.otherFood.emoji}</div>
+                      <div className="text-xs font-medium text-gray-700">{round.otherFood.name}</div>
+                      <div className="text-xs text-gray-600 mt-1">{round.otherFood.displayServing}</div>
+                      <div className="text-sm font-bold text-gray-800 mt-1">{round.otherCalories} cal</div>
+                      <div className="text-xs text-gray-500 mt-1">Other option</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          
           <button
             onClick={resetGame}
             className="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-8 rounded-full transition-colors"
@@ -203,7 +263,7 @@ export default function CalorieGame() {
       <div className="bg-white rounded-3xl shadow-xl p-8 max-w-2xl w-full">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Calorie Curiosity</h1>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Calorie Curiosity 🤔</h1>
           <p className="text-gray-600">Learning about food, one guess at a time</p>
           <div className="flex justify-center gap-6 mt-4 text-sm">
             <span className="text-gray-700">Round: <span className="font-semibold">{round}/{MAX_ROUNDS}</span></span>
@@ -231,7 +291,7 @@ export default function CalorieGame() {
                 >
                   <div className="text-6xl mb-3">{food.emoji}</div>
                   <div className="text-xl font-semibold text-gray-800">{food.name}</div>
-                  <div className="text-md font-light text-gray-800">{food.displayServing}</div>
+                  <div className="text-md text-gray-500">{food.displayServing}</div>
                 </button>
               ))}
             </div>

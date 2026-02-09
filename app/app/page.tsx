@@ -385,6 +385,7 @@ export default function CalorieGame() {
           <p className={`mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
             You completed all 10 rounds!
           </p>
+          <p className={`${darkMode ? 'text-gray-500' : 'text-black'} `}>Difficulty: {difficulty}</p>
           <p className="text-3xl font-bold text-green-600 mb-6">Final Score: {score}/{MAX_ROUNDS}</p>
           
           {/* Round History Grid */}

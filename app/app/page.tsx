@@ -362,6 +362,9 @@ export default function CalorieGame() {
           <h2 className={`text-2xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
             Great job!
           </h2>
+          <p>
+            Difficulty: {difficulty}
+          </p>
           <p className={`mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
             You completed all 10 rounds!
           </p>

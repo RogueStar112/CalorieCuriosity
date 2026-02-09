@@ -46,7 +46,27 @@ const foodData: Food[] = [
   { id: 27, name: "Potato Chips", emoji: "🥨", calories: 150, serving: "28g", caloriesPerGram: 5.36 },
   { id: 28, name: "Hot Dog", emoji: "🌭", calories: 290, serving: "140g", caloriesPerGram: 2.07 },
   { id: 29, name: "Pancakes with Syrup", emoji: "🥞", calories: 520, serving: "230g", caloriesPerGram: 2.26 },
-  { id: 30, name: "Granola Bar", emoji: "🍫", calories: 140, serving: "40g", caloriesPerGram: 3.5 }
+  { id: 30, name: "Granola Bar", emoji: "🍫", calories: 140, serving: "40g", caloriesPerGram: 3.5 },
+  { id: 31, name: "Orange", emoji: "🍊", calories: 62, serving: "130g", caloriesPerGram: 0.48 },
+  { id: 32, name: "Croissant", emoji: "🥐", calories: 230, serving: "50g", caloriesPerGram: 4.6 },
+  { id: 33, name: "Muffin", emoji: "🧁", calories: 425, serving: "115g", caloriesPerGram: 3.7 },
+  { id: 34, name: "Chicken Wings", emoji: "🍗", calories: 430, serving: "140g", caloriesPerGram: 3.07 },
+  { id: 35, name: "Quesadilla", emoji: "🫓", calories: 480, serving: "200g", caloriesPerGram: 2.4 },
+  { id: 36, name: "Hummus", emoji: "🫘", calories: 180, serving: "100g", caloriesPerGram: 1.8 },
+  { id: 37, name: "Steak", emoji: "🥩", calories: 270, serving: "115g", caloriesPerGram: 2.35 },
+  { id: 38, name: "Fried Rice", emoji: "🍚", calories: 330, serving: "200g", caloriesPerGram: 1.65 },
+  { id: 39, name: "Nachos", emoji: "🧀", calories: 560, serving: "200g", caloriesPerGram: 2.8 },
+  { id: 40, name: "Strawberries", emoji: "🍓", calories: 50, serving: "150g", caloriesPerGram: 0.33 },
+  { id: 41, name: "Salmon Fillet", emoji: "🐟", calories: 206, serving: "100g", caloriesPerGram: 2.06 },
+  { id: 42, name: "Pasta Carbonara", emoji: "🍝", calories: 425, serving: "250g", caloriesPerGram: 1.7 },
+  { id: 43, name: "Chocolate Bar", emoji: "🍫", calories: 235, serving: "45g", caloriesPerGram: 5.22 },
+  { id: 44, name: "Waffles", emoji: "🧇", calories: 380, serving: "150g", caloriesPerGram: 2.53 },
+  { id: 45, name: "Egg", emoji: "🥚", calories: 70, serving: "50g", caloriesPerGram: 1.4 },
+  { id: 46, name: "Cottage Cheese", emoji: "🧈", calories: 98, serving: "100g", caloriesPerGram: 0.98 },
+  { id: 47, name: "Pretzel", emoji: "🥨", calories: 380, serving: "100g", caloriesPerGram: 3.8 },
+  { id: 48, name: "Burrito", emoji: "🌯", calories: 595, serving: "275g", caloriesPerGram: 2.16 },
+  { id: 49, name: "Watermelon", emoji: "🍉", calories: 45, serving: "150g", caloriesPerGram: 0.3 },
+  { id: 50, name: "Popcorn", emoji: "🍿", calories: 110, serving: "30g", caloriesPerGram: 3.67 }
 ];
 
 export default function CalorieGame() {
@@ -362,9 +382,6 @@ export default function CalorieGame() {
           <h2 className={`text-2xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
             Great job!
           </h2>
-          <p>
-            Difficulty: {difficulty}
-          </p>
           <p className={`mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
             You completed all 10 rounds!
           </p>
@@ -526,17 +543,37 @@ export default function CalorieGame() {
                   : minHeight;
                 
                 const wasSelected = selectedFood?.id === food.id;
-                const shouldShowGreen = wasSelected && isCorrect;
+                const isCorrectChoice = gameMode === 'more'
+                  ? foodCals > (foodPair.find(f => f.id !== food.id)?.displayCalories || 0)
+                  : foodCals < (foodPair.find(f => f.id !== food.id)?.displayCalories || 0);
+                
+                // Determine border styling
+                let borderClass = '';
+                if (isCorrect && wasSelected) {
+                  // User was correct and this is their choice
+                  borderClass = 'border-4 border-green-500 shadow-lg shadow-green-200';
+                } else if (!isCorrect && wasSelected) {
+                  // User was incorrect and this is their choice (wrong answer)
+                  borderClass = 'border-4 border-red-500 shadow-lg shadow-red-200';
+                } else if (!isCorrect && !wasSelected) {
+                  // User was incorrect and this is the other choice (correct answer)
+                  borderClass = 'border-4 border-green-500 shadow-lg shadow-green-200';
+                } else {
+                  // Default border
+                  borderClass = darkMode 
+                    ? 'border-2 border-gray-600' 
+                    : 'border-2 border-gray-200';
+                }
                 
                 return (
                   <div
                     key={food.id}
-                    className={`rounded-2xl p-8 flex-1 transition-all ${
-                      shouldShowGreen 
-                        ? 'border-4 border-green-500 shadow-lg shadow-green-200' 
-                        : darkMode
-                        ? 'border-2 border-gray-600 bg-gradient-to-br from-gray-700 to-gray-600'
-                        : 'border-2 border-gray-200 bg-gradient-to-br from-white to-gray-50'
+                    className={`rounded-2xl p-8 flex-1 transition-all ${borderClass} ${
+                      darkMode && !borderClass.includes('green') && !borderClass.includes('red')
+                        ? 'bg-gradient-to-br from-gray-700 to-gray-600'
+                        : !borderClass.includes('green') && !borderClass.includes('red')
+                        ? 'bg-gradient-to-br from-white to-gray-50'
+                        : ''
                     }`}
                     style={{ height: `250px` }}
                   >

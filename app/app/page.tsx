@@ -502,7 +502,7 @@ export default function CalorieGame() {
         {!showResult ? (
           <div>
             <p className={`text-center mb-6 text-lg ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              Which has {gameMode === 'more' ? 'more' : 'fewer'} calories?
+              Which has {gameMode === 'more' ? <span className='font-extrabold text-green-600'>more</span> : <span className='font-black text-red-600 italic'>fewer</span>} calories?
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {foodPair.map((food) => (
